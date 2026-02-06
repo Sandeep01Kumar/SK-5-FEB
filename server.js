@@ -16,9 +16,12 @@ app.get('/evening', (req, res) => {
 });
 
 // Bind the Express application to the loopback address on port 3000,
-// preserving the same listen configuration as the original http server
-app.listen(port, hostname, () => {
+// preserving the same listen configuration as the original http server.
+// The server reference is captured and exported alongside the app for
+// proper lifecycle management (e.g., graceful shutdown in tests).
+const server = app.listen(port, hostname, () => {
   console.log(`Server running at http://${hostname}:${port}/`);
 });
 
 module.exports = app;
+module.exports.server = server;
