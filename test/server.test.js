@@ -11,9 +11,11 @@
  * project's minimal dependency approach. HTTP requests are made via the built-in
  * node:http module using both http.get() and http.request() methods.
  *
- * Server lifecycle is managed via before()/after() hooks to ensure the Express
- * server is listening before tests run and is gracefully closed after completion
- * to prevent port conflicts and allow clean process exit.
+ * Server lifecycle is managed explicitly: the test suite starts its own server
+ * in the before() hook and closes it in the after() hook. The server.js module
+ * does NOT auto-start when required, which avoids event-loop timing issues with
+ * the Node.js built-in test runner (node:test) on v20.x where promises in
+ * before() hooks could remain pending while the event loop resolved.
  */
 'use strict';
 
@@ -23,18 +25,24 @@ const http = require('node:http');
 
 /**
  * Express application instance imported from server.js.
- * Requiring the module triggers app.listen() internally, starting the
- * HTTP server on 127.0.0.1:3000.
+ * Requiring the module does NOT start listening; the test manages that.
  * @type {import('express').Application}
  */
-let app;
+const app = require('../server');
 
 /**
- * HTTP server instance returned by app.listen() and exported from server.js
- * as module.exports.server. Used for lifecycle management (close after tests).
- * @type {import('http').Server}
+ * HTTP server instance created and managed by the test suite.
+ * Started in the before() hook, closed in the after() hook.
+ * @type {import('http').Server | null}
  */
-let server;
+let server = null;
+
+/**
+ * Hostname and port exported by the server module, used to start
+ * the test server on the same address as the production server.
+ */
+const hostname = app.hostname;
+const port = app.port;
 
 /**
  * Makes an HTTP GET request using the http.get() shorthand and returns a
@@ -49,7 +57,7 @@ let server;
  */
 function httpGet(path) {
   return new Promise((resolve, reject) => {
-    http.get(`http://127.0.0.1:3000${path}`, (res) => {
+    http.get(`http://${hostname}:${port}${path}`, (res) => {
       let body = '';
       res.on('data', (chunk) => {
         body += chunk;
@@ -104,34 +112,26 @@ function httpRequest(options) {
 }
 
 describe('Express.js Server - Endpoint Integration Tests', () => {
-  // Setup: Import the server module which triggers app.listen() on 127.0.0.1:3000,
-  // then wait for the server to be fully ready before running any test cases.
-  before(() => {
-    app = require('../server');
-    server = app.server;
-
-    // The server may already be listening by the time require() returns
-    // (if the event loop processed the listen callback synchronously), or it
-    // may still be pending. Handle both cases to avoid race conditions.
-    return new Promise((resolve) => {
-      if (server.listening) {
-        resolve();
-      } else {
-        server.on('listening', resolve);
-      }
+  // Setup: Start the Express server on 127.0.0.1:3000 and wait until it is
+  // fully listening before running any test cases. The server is started here
+  // (rather than auto-started in server.js on require) to give the test runner
+  // full control over the lifecycle and avoid event-loop timing issues.
+  before((_, done) => {
+    server = app.listen(port, hostname, () => {
+      done();
     });
   });
 
   // Teardown: Gracefully close the HTTP server to release port 3000 and allow
   // the test runner process to exit cleanly without dangling connections.
-  after(() => {
-    return new Promise((resolve) => {
-      if (server) {
-        server.close(resolve);
-      } else {
-        resolve();
-      }
-    });
+  after((_, done) => {
+    if (server) {
+      server.close(() => {
+        done();
+      });
+    } else {
+      done();
+    }
   });
 
   // -----------------------------------------------------------------------
@@ -169,8 +169,8 @@ describe('Express.js Server - Endpoint Integration Tests', () => {
       // Use http.request() with explicit options for this test to exercise
       // both http.get() and http.request() code paths across the test suite
       const res = await httpRequest({
-        hostname: '127.0.0.1',
-        port: 3000,
+        hostname: hostname,
+        port: port,
         path: '/evening',
         method: 'GET'
       });
@@ -186,8 +186,8 @@ describe('Express.js Server - Endpoint Integration Tests', () => {
 
     it('should return Content-Type header containing text/plain', async () => {
       const res = await httpRequest({
-        hostname: '127.0.0.1',
-        port: 3000,
+        hostname: hostname,
+        port: port,
         path: '/evening',
         method: 'GET'
       });
@@ -214,8 +214,8 @@ describe('Express.js Server - Endpoint Integration Tests', () => {
       // Use http.request() with explicit options to verify 404 handling
       // through a different HTTP client code path
       const res = await httpRequest({
-        hostname: '127.0.0.1',
-        port: 3000,
+        hostname: hostname,
+        port: port,
         path: '/random-path',
         method: 'GET'
       });
