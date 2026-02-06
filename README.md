@@ -1,10 +1,6 @@
 # hao-backprop-test
 
-Test project for backprop integration — an Express.js HTTP server serving greeting endpoints.
-
-## Overview
-
-A minimal Node.js HTTP server built with [Express.js](https://expressjs.com/) that serves plain-text greeting responses. Originally implemented with the native `http` module, the server has been migrated to Express.js to support route-based request handling.
+A minimal Express.js HTTP server for backprop integration testing. The server exposes two plain-text endpoints on `http://127.0.0.1:3000/`.
 
 ## Endpoints
 
@@ -13,26 +9,52 @@ A minimal Node.js HTTP server built with [Express.js](https://expressjs.com/) th
 | GET    | `/`        | `Hello, universe!\n`   | text/plain   | 200    |
 | GET    | `/evening` | `Good evening`         | text/plain   | 200    |
 
-Any request to an undefined route returns an HTTP 404 response (Express.js default behavior).
+### GET /
+
+Returns the default greeting message.
+
+```
+curl http://127.0.0.1:3000/
+Hello, universe!
+```
+
+### GET /evening
+
+Returns an evening greeting message.
+
+```
+curl http://127.0.0.1:3000/evening
+Good evening
+```
 
 ## Setup
 
-```bash
-# Install dependencies
-npm install
+Install the project dependencies:
 
-# Start the server
+```bash
+npm install
+```
+
+## Running the Server
+
+Start the server using npm:
+
+```bash
 npm start
-# or
+```
+
+Or run directly with Node.js:
+
+```bash
 node server.js
 ```
 
-The server runs at `http://127.0.0.1:3000/`.
+The server starts on `http://127.0.0.1:3000/` and logs a confirmation message to the console.
 
-## Running Tests
+## Dependencies
 
-```bash
-npm test
-```
+- [Express.js](https://expressjs.com/) `^5.2.1` — HTTP web framework providing routing and request/response handling.
 
-Tests use the Node.js built-in test runner (`node:test`) and verify both endpoint responses and 404 handling.
+## License
+
+MIT
