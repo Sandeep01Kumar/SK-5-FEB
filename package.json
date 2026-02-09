@@ -1,10 +1,11 @@
 {
     "name": "hello_world",
     "version": "1.0.0",
-    "description": "Hello world in Node.js",
-    "main": "index.js",
+    "description": "Hello world HTTP server in Python 3 with Flask",
+    "main": "server.py",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "start": "python3 server.py",
+        "test": "python3 -m pytest test/test_server.py -v"
     },
     "author": "hxu",
     "license": "MIT"
