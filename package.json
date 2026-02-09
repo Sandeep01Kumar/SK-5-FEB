@@ -1,14 +1,11 @@
 {
     "name": "hello_world",
     "version": "1.0.0",
-    "description": "Hello world in Node.js",
-    "main": "server.js",
+    "description": "Hello world HTTP server in Python 3 with Flask",
+    "main": "server.py",
     "scripts": {
-        "start": "node server.js",
-        "test": "node --test test/server.test.js"
-    },
-    "dependencies": {
-        "express": "^5.2.1"
+        "start": "python3 server.py",
+        "test": "python3 -m pytest test/test_server.py -v"
     },
     "author": "hxu",
     "license": "MIT"
