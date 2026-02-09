@@ -1,134 +1,154 @@
-# Project Guide — Express.js Migration and New Endpoint
+# Project Guide: HTTP Server Migration to Python Flask
 
 ## 1. Executive Summary
 
-**Completion: 10 hours completed out of 13 total hours = 77% complete.**
+**Project Completion: 75% (9 hours completed out of 12 total hours)**
 
-This project migrates a minimal Node.js HTTP server from the native `http` module to Express.js 5.2.1 and adds a new `GET /evening` endpoint returning `"Good evening"`. All five in-scope files specified in the Agent Action Plan have been successfully created or modified, with 100% validation success across dependencies, compilation, tests, and runtime.
+This project migrated a bare Node.js HTTP server (`http.createServer()`) to a Python 3 Flask application and added a new `GET /evening` endpoint. The implementation was initially planned for Express.js but was refined by the user to use Python/Flask instead.
+
+**Completion Calculation:**
+- Completed: 9 hours (server implementation + tests + config + docs + validation)
+- Remaining: 3 hours (artifact cleanup + rationalization + production hardening + buffer)
+- Total: 12 hours
+- Completion: 9 / 12 = 75%
 
 ### Key Achievements
-- Complete Express.js migration with backward-compatible `GET /` endpoint
-- New `GET /evening` endpoint fully implemented and tested
-- 8/8 integration tests passing with zero failures
-- Zero dependency vulnerabilities (npm audit clean)
-- Zero compilation errors or warnings
-- Runtime verified: both endpoints return correct responses
-- Comprehensive documentation with endpoint table and setup instructions
+- Flask server (`server.py`) fully implemented with 2 route handlers and comprehensive docstrings
+- Complete test suite (`test/test_server.py`) with 8 tests across 3 test classes — **all 8 passing**
+- Runtime validation confirmed: all endpoints return correct status codes, bodies, and content types
+- Comprehensive README.md with endpoint table, setup instructions, and usage examples
+- Full behavioral parity with the original server preserved (host, port, startup message, response format)
 
 ### Critical Unresolved Issues
-- **None** — All planned features are implemented and all validation checks pass
-
-### Recommended Next Steps
-- Human code review of the Express.js migration and test approach
-- Manual verification of backward compatibility with any existing consumers
-- Merge PR to main branch
+- **Orphaned Node.js artifacts**: `package-lock.json` (827 lines) still contains Express.js dependency tree with 65 transitive packages; `node_modules/` directory (65 packages) exists but is unused
+- **package.json inconsistency**: Node.js package manifest file now references Python commands — should be rationalized or removed
+- **Response body variance**: Original `main` branch returned `"Hello, World!\n"` but commit `b865638` changed it to `"Hello, universe!\n"` before Blitzy work began — current implementation preserves `"Hello, universe!\n"`, which may need human confirmation
 
 ---
 
 ## 2. Validation Results Summary
 
-### 2.1 Final Validator Accomplishments
-The Final Validator agent successfully validated all components and resolved one event-loop timing bug in the test suite.
+### 2.1 What the Final Validator Accomplished
+The Final Validator completed a full rewrite from the intermediate Node.js/Express.js implementation to Python 3/Flask, created comprehensive tests, and validated all endpoints both programmatically (pytest) and manually (curl against a running server).
 
-### 2.2 Compilation Results
+### 2.2 Test Results
 
-| File | Syntax Check | Result |
-|------|-------------|--------|
-| `server.js` | `node -c server.js` | ✅ Pass |
-| `test/server.test.js` | `node -c test/server.test.js` | ✅ Pass |
+| Test | Class | Result |
+|------|-------|--------|
+| `test_returns_200_status_code` | TestRootEndpoint | ✅ PASSED |
+| `test_returns_exact_body_with_trailing_newline` | TestRootEndpoint | ✅ PASSED |
+| `test_returns_text_plain_content_type` | TestRootEndpoint | ✅ PASSED |
+| `test_returns_200_status_code` | TestEveningEndpoint | ✅ PASSED |
+| `test_returns_exact_body` | TestEveningEndpoint | ✅ PASSED |
+| `test_returns_text_plain_content_type` | TestEveningEndpoint | ✅ PASSED |
+| `test_returns_404_for_nonexistent_path` | TestUndefinedRoutes | ✅ PASSED |
+| `test_returns_404_for_random_path` | TestUndefinedRoutes | ✅ PASSED |
 
-**Result: 100% — Zero compilation errors or warnings**
+**Test Result: 8/8 PASSED (100%) in 0.12 seconds**
 
-### 2.3 Test Results
+### 2.3 Runtime Validation
 
-| Suite | Tests | Pass | Fail | Cancelled |
-|-------|-------|------|------|-----------|
-| GET / — Root endpoint | 3 | 3 | 0 | 0 |
-| GET /evening — New endpoint | 3 | 3 | 0 | 0 |
-| Undefined routes — 404 handling | 2 | 2 | 0 | 0 |
-| **Total** | **8** | **8** | **0** | **0** |
+| Endpoint | Status | Body | Content-Type | Verified |
+|----------|--------|------|--------------|----------|
+| `GET /` | 200 OK | `Hello, universe!\n` | text/plain; charset=utf-8 | ✅ |
+| `GET /evening` | 200 OK | `Good evening` | text/plain; charset=utf-8 | ✅ |
+| `GET /nonexistent` | 404 NOT FOUND | HTML error page | text/html; charset=utf-8 | ✅ |
 
-**Result: 100% — 8/8 tests passing, verified reliable across multiple runs**
+### 2.4 Behavioral Parity
 
-### 2.4 Runtime Verification
-
-| Endpoint | Status | Response Body | Content-Type | Result |
-|----------|--------|---------------|--------------|--------|
-| `GET /` | 200 | `Hello, universe!\n` | text/plain; charset=utf-8 | ✅ Pass |
-| `GET /evening` | 200 | `Good evening` | text/plain; charset=utf-8 | ✅ Pass |
-| `GET /nonexistent` | 404 | HTML error page | text/html | ✅ Pass |
-
-**Result: 100% — Server starts on 127.0.0.1:3000, all endpoints respond correctly**
+| Behavior | Original Server | Flask Implementation | Match |
+|----------|----------------|---------------------|-------|
+| Listen address | 127.0.0.1:3000 | 127.0.0.1:3000 | ✅ |
+| GET / response body | `"Hello, universe!\n"` | `"Hello, universe!\n"` | ✅ |
+| GET / status code | 200 | 200 | ✅ |
+| GET / content type | text/plain | text/plain; charset=utf-8 | ✅ |
+| Startup console message | `Server running at http://127.0.0.1:3000/` | `Server running at http://127.0.0.1:3000/` | ✅ |
+| GET /evening response | *(new feature)* | `"Good evening"` | ✅ New |
+| Undefined routes | N/A (catch-all) | 404 | ✅ Improved |
 
 ### 2.5 Dependency Status
 
-| Metric | Value |
-|--------|-------|
-| Production dependency | express@5.2.1 |
-| Total packages installed | 66 |
-| Vulnerabilities | 0 |
-| Node.js version | v20.20.0 |
-| npm version | 11.1.0 |
+| Dependency | Version | Status |
+|------------|---------|--------|
+| Python | 3.12.3 | ✅ System installed |
+| Flask | 3.1.2 | ✅ Installed in venv |
+| pytest | 9.0.2 | ✅ Installed in venv |
 
-**Result: 100% — Clean dependency tree with no vulnerabilities**
+### 2.6 Git Change Summary
+- **Branch**: `blitzy-bc6bf605-83d9-4cc4-8ef2-e10e64eac46e`
+- **Total commits**: 11 (10 by Blitzy Agent, 1 pre-existing by Sandeep01Kumar)
+- **Files changed**: 11
+- **Lines added**: 1,836
+- **Lines removed**: 17
+- **Net change**: +1,819 lines
 
-### 2.6 Fixes Applied During Validation
+### 2.7 Files Created/Modified
 
-| # | Issue | Root Cause | Fix Applied |
-|---|-------|-----------|-------------|
-| 1 | All 8 tests cancelled (not failing, cancelled) | `server.js` auto-started Express server on `require()`, causing event-loop timing conflict with Node.js v20 built-in test runner's `before()` hook Promise resolution | Added `require.main === module` guard in `server.js` so server only auto-starts when run directly; switched `test/server.test.js` `before()`/`after()` hooks from Promise-based to callback-based (`done`) pattern |
+| File | Action | Purpose |
+|------|--------|---------|
+| `server.py` | CREATED | Flask application with GET / and GET /evening routes |
+| `test/test_server.py` | CREATED | 8 pytest tests for both endpoints and 404 handling |
+| `requirements.txt` | CREATED | Python dependencies (Flask, pytest) |
+| `.gitignore` | CREATED | Python artifact exclusions (__pycache__, venv, etc.) |
+| `server.js` | MODIFIED | Replaced with migration notice pointing to server.py |
+| `test/server.test.js` | MODIFIED | Replaced with migration notice pointing to test/test_server.py |
+| `package.json` | MODIFIED | Updated scripts to Python commands, description updated |
+| `README.md` | MODIFIED | Full rewrite with Flask documentation |
+| `package-lock.json` | REGENERATED | Contains orphaned Express.js dependency tree (needs cleanup) |
 
 ---
 
-## 3. Visual Representation
+## 3. Hours Breakdown
 
-### Hours Breakdown
+### 3.1 Completed Hours (9 hours)
+
+| Category | Hours | Details |
+|----------|-------|---------|
+| Flask server implementation | 2.0 | server.py with 2 routes, docstrings, module import pattern |
+| Test suite creation | 2.0 | 8 tests across 3 classes with fixtures and assertions |
+| Initial Express.js work (superseded) | 1.5 | Express migration later replaced by Flask per user refinement |
+| Documentation | 1.0 | Comprehensive README.md with endpoint table, setup, examples |
+| Validation and runtime testing | 1.0 | pytest execution, curl verification, behavioral parity checks |
+| Configuration and packaging | 0.5 | requirements.txt, .gitignore, package.json updates |
+| Legacy file migration notices | 0.5 | server.js and test/server.test.js deprecation notices |
+| Dependency setup | 0.5 | Python venv creation, pip install, npm install (Express phase) |
+| **Total Completed** | **9.0** | |
+
+### 3.2 Remaining Hours (3 hours, including 1.20× enterprise uncertainty buffer)
+
+| # | Task | Raw Hours | Buffered Hours |
+|---|------|-----------|----------------|
+| 1 | Remove orphaned Node.js artifacts | 0.5 | 0.5 |
+| 2 | Rationalize package.json for Python project | 0.5 | 0.5 |
+| 3 | Verify response body against original production spec | 0.5 | 0.5 |
+| 4 | Production WSGI server configuration | 0.75 | 1.0 |
+| 5 | Enterprise uncertainty buffer | — | 0.5 |
+| | **Total Remaining** | **2.25** | **3.0** |
+
+### 3.3 Visual Hours Breakdown
 
 ```mermaid
 pie title Project Hours Breakdown
-    "Completed Work" : 10
+    "Completed Work" : 9
     "Remaining Work" : 3
 ```
 
-**Calculation: 10 hours completed / (10 + 3) total hours = 77% complete**
-
-### Completed Hours Breakdown (10h)
-
-| Component | Hours | Details |
-|-----------|-------|---------|
-| Express.js research & version selection | 0.5 | Verified Express 5.2.1 compatibility with Node.js v20 |
-| package.json modifications | 0.5 | Added dependency, start script, test script, corrected main field |
-| npm install & lock file regeneration | 0.5 | Installed 66 packages, verified clean audit |
-| server.js Express.js rewrite | 2.0 | Import replacement, app creation, 2 route handlers, startup guard, module exports (68 lines) |
-| test/server.test.js creation | 3.5 | HTTP helpers, 4 describe blocks, 8 test cases, before/after hooks (227 lines) |
-| README.md documentation update | 1.0 | Endpoint table, curl examples, setup instructions, dependency list (61 lines) |
-| Event-loop timing bug debugging & fix | 1.5 | Diagnosed test cancellation root cause, implemented require.main guard and callback hooks |
-| Validation cycles & runtime verification | 0.5 | Multiple test runs, manual endpoint testing, npm audit |
-| **Total Completed** | **10** | |
-
-### Remaining Hours Breakdown (3h)
-
-| Task | Base Hours | After Multipliers (×1.15 ×1.25) |
-|------|-----------|----------------------------------|
-| Code review of Express.js migration | 1.0 | 1.4 |
-| Manual backward compatibility verification | 0.5 | 0.7 |
-| PR merge and post-merge smoke test | 0.5 | 0.9 |
-| **Total Remaining** | **2.0** | **3.0** |
+Completed: 9 hours (75%) | Remaining: 3 hours (25%) | Total: 12 hours
 
 ---
 
-## 4. Detailed Task Table
+## 4. Detailed Task Table for Human Developers
 
-All remaining tasks for human developers to complete before production readiness:
+All remaining tasks sum to exactly **3.0 hours**, matching the "Remaining Work" in the pie chart above.
 
-| # | Task | Description | Priority | Severity | Hours | Confidence |
-|---|------|-------------|----------|----------|-------|------------|
-| 1 | Code review of Express.js migration | Review `server.js` rewrite from `http.createServer()` to Express.js: verify route definitions, response format, `require.main === module` guard, and exported members. Review `test/server.test.js` for test coverage adequacy and lifecycle management. Review `package.json` for correct dependency version and script definitions. | High | Medium | 1.4 | High |
-| 2 | Manual backward compatibility verification | Manually verify that any existing consumers or CI/CD pipelines that depend on the `GET /` endpoint returning `"Hello, universe!\n"` on `127.0.0.1:3000` continue to work with the Express.js server. Test with actual consumer clients if available. | Medium | Medium | 0.7 | High |
-| 3 | PR merge and post-merge smoke test | Merge the PR to main branch. Run `npm install && npm test && npm start` on the main branch to verify the merge was clean. Confirm server starts and both endpoints respond correctly in the target environment. | Medium | Low | 0.9 | High |
-| | **Total Remaining Hours** | | | | **3.0** | |
-
-**Verification: Task hours sum (1.4 + 0.7 + 0.9) = 3.0h = Remaining Work in pie chart ✓**
+| # | Task | Description | Action Steps | Hours | Priority | Severity |
+|---|------|-------------|--------------|-------|----------|----------|
+| 1 | Remove orphaned Node.js artifacts | `package-lock.json` (827 lines) contains Express.js + 65 transitive deps; `node_modules/` directory has 65 unused packages | 1. Delete `node_modules/` directory. 2. Either delete `package-lock.json` or regenerate it empty (run `npm install` after cleaning package.json). 3. Verify .gitignore covers node_modules/. 4. Commit cleanup. | 0.5 | High | Medium |
+| 2 | Rationalize package.json | package.json is a Node.js manifest but project is now Python-only; `scripts.start` calls `python3`, `main` points to `server.py` | 1. Decide whether to keep package.json (for npm ecosystem compat) or remove it. 2. If keeping: remove `express` reference from lock file, ensure scripts are correct. 3. If removing: delete package.json and package-lock.json entirely, rely on requirements.txt. 4. Update README if structure changes. | 0.5 | Medium | Low |
+| 3 | Verify response body alignment | Original `main` branch returns `"Hello, World!\n"` but branch state (commit b865638) changed to `"Hello, universe!\n"` — confirm intended production behavior | 1. Check with stakeholders whether `"Hello, universe!\n"` or `"Hello, World!\n"` is the correct response. 2. If `"Hello, World!\n"` is needed: update server.py line 42 and test assertion in test/test_server.py. 3. Run `python3 -m pytest test/test_server.py -v` to confirm tests pass. | 0.5 | Medium | Medium |
+| 4 | Production WSGI server configuration | Flask development server (`app.run()`) is not suitable for production traffic; needs a production-grade WSGI server | 1. Install Gunicorn: add `gunicorn>=22.0.0` to requirements.txt. 2. Create a startup command: `gunicorn -b 127.0.0.1:3000 server:app`. 3. Update README.md with production startup instructions. 4. Test that Gunicorn serves both endpoints correctly. | 1.0 | Low | Medium |
+| 5 | Enterprise buffer (review overhead) | Buffer for code review, CI integration, and unforeseen issues during human tasks above | Account for review cycles, merge conflicts, and minor adjustments discovered during execution. | 0.5 | — | — |
+| | **Total Remaining Hours** | | | **3.0** | | |
 
 ---
 
@@ -136,187 +156,184 @@ All remaining tasks for human developers to complete before production readiness
 
 ### 5.1 System Prerequisites
 
-| Requirement | Minimum | Verified Version |
-|-------------|---------|-----------------|
-| Node.js | v18.0.0+ | v20.20.0 |
-| npm | v8.0.0+ | 11.1.0 |
-| Operating System | Linux, macOS, or Windows | Linux (verified) |
+| Requirement | Minimum Version | Verified Version |
+|-------------|----------------|-----------------|
+| Python | 3.10+ | 3.12.3 |
+| pip | 22.0+ | (bundled with Python 3.12) |
+| Git | 2.x | (system installed) |
+
+No database, cache, or external service is required. The application is a standalone HTTP server.
 
 ### 5.2 Environment Setup
 
-Clone the repository and switch to the feature branch:
+Clone the repository and navigate to the project root:
 
 ```bash
 git clone <repository-url>
-cd <repository-name>
-git checkout blitzy-bc6bf605-83d9-4cc4-8ef2-e10e64eac46e
+cd <repository-directory>
 ```
 
-No environment variables are required. The server uses hardcoded `127.0.0.1:3000` as specified in the project scope.
+Create and activate a Python virtual environment:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
 
 ### 5.3 Dependency Installation
 
-Install all project dependencies from the project root:
+Install all Python dependencies from the requirements file:
 
 ```bash
-npm install
+pip install -r requirements.txt
 ```
 
-**Expected output:**
+**Expected output** (key lines):
 ```
-added 66 packages, and audited 67 packages in Xs
-found 0 vulnerabilities
+Successfully installed Flask-3.1.2 Jinja2-... MarkupSafe-... Werkzeug-... ...
+Successfully installed pytest-9.0.2 ...
 ```
 
-Verify Express.js is installed:
-
+**Verification:**
 ```bash
-npm ls express
-```
-
-**Expected output:**
-```
-hello_world@1.0.0
-└── express@5.2.1
+python3 -c "import flask; print(f'Flask {flask.__version__}')"
+python3 -c "import pytest; print(f'pytest {pytest.__version__}')"
 ```
 
 ### 5.4 Running Tests
 
-Execute the full test suite using the Node.js built-in test runner:
+Execute the full test suite (does NOT require the server to be running):
 
 ```bash
-npm test
+python3 -m pytest test/test_server.py -v
 ```
 
 **Expected output:**
 ```
-TAP version 13
-# Subtest: Express.js Server - Endpoint Integration Tests
-    ...
-# tests 8
-# suites 4
-# pass 8
-# fail 0
-# cancelled 0
-# skipped 0
-```
+test/test_server.py::TestRootEndpoint::test_returns_200_status_code PASSED
+test/test_server.py::TestRootEndpoint::test_returns_exact_body_with_trailing_newline PASSED
+test/test_server.py::TestRootEndpoint::test_returns_text_plain_content_type PASSED
+test/test_server.py::TestEveningEndpoint::test_returns_200_status_code PASSED
+test/test_server.py::TestEveningEndpoint::test_returns_exact_body PASSED
+test/test_server.py::TestEveningEndpoint::test_returns_text_plain_content_type PASSED
+test/test_server.py::TestUndefinedRoutes::test_returns_404_for_nonexistent_path PASSED
+test/test_server.py::TestUndefinedRoutes::test_returns_404_for_random_path PASSED
 
-All 8 tests should pass with 0 failures and 0 cancellations.
+8 passed in 0.12s
+```
 
 ### 5.5 Starting the Server
 
-Start the server using npm:
+Start the Flask development server:
 
 ```bash
-npm start
-```
-
-Or run directly with Node.js:
-
-```bash
-node server.js
+python3 server.py
 ```
 
 **Expected console output:**
 ```
 Server running at http://127.0.0.1:3000/
+ * Serving Flask app 'server'
+ * Debug mode: off
 ```
+
+The server binds to `127.0.0.1:3000` (localhost only).
 
 ### 5.6 Verification Steps
 
-With the server running, verify each endpoint in a separate terminal:
+With the server running, open a new terminal and test each endpoint:
 
-**Test the root endpoint:**
-
+**Test GET / (root endpoint):**
 ```bash
 curl http://127.0.0.1:3000/
 ```
+Expected response: `Hello, universe!`
 
-**Expected response:** `Hello, universe!`
-
-**Test the evening endpoint:**
-
+**Test GET /evening (new endpoint):**
 ```bash
 curl http://127.0.0.1:3000/evening
 ```
+Expected response: `Good evening`
 
-**Expected response:** `Good evening`
-
-**Test 404 handling:**
-
+**Test undefined route (404):**
 ```bash
 curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/nonexistent
 ```
+Expected response: `404`
 
-**Expected response:** `404`
+### 5.7 Project Structure
 
-### 5.7 Troubleshooting
+```
+.
+├── server.py              # Flask application (active server)
+├── requirements.txt       # Python dependencies (Flask, pytest)
+├── test/
+│   └── test_server.py     # 8 pytest tests for all endpoints
+├── .gitignore             # Python artifact exclusions
+├── README.md              # Project documentation
+├── server.js              # Migration notice (deprecated)
+├── test/
+│   └── server.test.js     # Migration notice (deprecated)
+├── package.json           # Node.js manifest (needs cleanup)
+└── package-lock.json      # Orphaned Express.js deps (needs cleanup)
+```
 
-| Issue | Cause | Resolution |
-|-------|-------|------------|
-| `Error: Cannot find module 'express'` | Dependencies not installed | Run `npm install` from project root |
-| `EADDRINUSE: address already in use :::3000` | Port 3000 already occupied | Kill the existing process: `lsof -ti:3000 \| xargs kill` |
-| Tests show `cancelled` instead of `pass` | Stale server.js without `require.main` guard | Ensure `server.js` has the `if (require.main === module)` guard around `app.listen()` |
+### 5.8 Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| `ModuleNotFoundError: No module named 'flask'` | Virtual environment not activated or Flask not installed | Run `source venv/bin/activate && pip install -r requirements.txt` |
+| `Address already in use` on port 3000 | Another process using port 3000 | Kill the process: `fuser -k 3000/tcp` or use a different port |
+| Tests fail with import error | Working directory is not the project root | Run tests from project root: `cd <project-root> && python3 -m pytest test/test_server.py -v` |
 
 ---
 
 ## 6. Risk Assessment
 
-| # | Risk | Category | Severity | Likelihood | Mitigation |
-|---|------|----------|----------|------------|------------|
-| 1 | Express 5.x is a relatively recent major release; minor ecosystem incompatibilities may surface | Technical | Low | Low | Pin to `^5.2.1` in package.json; lock file ensures deterministic installs; no middleware beyond core Express is used |
-| 2 | Server binds to `127.0.0.1` (loopback only) — not accessible from external networks | Operational | Low | N/A | By design per scope requirements; change to `0.0.0.0` if external access is needed in future |
-| 3 | No HTTPS/TLS encryption on server | Security | Low | Low | Out of scope per Agent Action Plan §0.6.2; add TLS termination via reverse proxy if deploying to production |
-| 4 | No request logging, monitoring, or health check endpoints | Operational | Low | Low | Out of scope per Agent Action Plan §0.6.2; add middleware (morgan, express-status-monitor) if production observability is needed |
-| 5 | No rate limiting or input validation middleware | Security | Low | Low | Out of scope; endpoints return static strings with no user input processing, minimizing attack surface |
-| 6 | `package.json` main field previously pointed to non-existent `index.js` | Technical | Low | N/A | Fixed in this PR — `main` now correctly points to `server.js` |
+### 6.1 Technical Risks
 
-**Overall Risk Assessment: LOW** — The project is a minimal test fixture with static responses, no user input processing, no database, and no external integrations. The attack surface is negligible.
+| Risk | Severity | Likelihood | Impact | Mitigation |
+|------|----------|------------|--------|------------|
+| Orphaned Node.js artifacts inflate repository | Low | Certain | Minor — extra 34KB in lock file, 65 unused npm packages | Remove package-lock.json and node_modules/ (Task #1) |
+| Flask development server used in production | Medium | Medium | Performance bottleneck, no concurrency | Configure Gunicorn or uWSGI for production (Task #4) |
+| Response body discrepancy with original main | Medium | Medium | Consumers expecting "Hello, World!\n" get "Hello, universe!\n" | Verify with stakeholders (Task #3) |
+
+### 6.2 Security Risks
+
+| Risk | Severity | Likelihood | Impact | Mitigation |
+|------|----------|------------|--------|------------|
+| Server bound to 127.0.0.1 only | None (positive) | N/A | Server not exposed to network — appropriate for test fixture | No action needed; intentional design |
+| No authentication on endpoints | Low | Low | Endpoints return static strings — no sensitive data | Acceptable for test fixture purpose |
+| Flask debug mode disabled | None (positive) | N/A | Debug mode is off — no stack traces exposed | No action needed; correctly configured |
+
+### 6.3 Operational Risks
+
+| Risk | Severity | Likelihood | Impact | Mitigation |
+|------|----------|------------|--------|------------|
+| No health check endpoint | Low | Low | Harder to monitor server availability | Add `/health` endpoint if needed in future |
+| No logging beyond Flask defaults | Low | Low | Limited observability | Add Python logging module if production monitoring needed |
+| No process manager | Low | Medium | Server stops if terminal closes | Use systemd, supervisord, or PM2 for persistent operation |
+
+### 6.4 Integration Risks
+
+| Risk | Severity | Likelihood | Impact | Mitigation |
+|------|----------|------------|--------|------------|
+| package.json still references Python commands | Low | Certain | Confusion if `npm start` or `npm test` is run without Python | Rationalize package.json (Task #2) |
+| Existing CI/CD expecting Node.js commands | Medium | Unknown | Pipeline failures if not updated | Review CI/CD configuration and update to Python commands |
+| Consumers expecting Node.js server.js entry point | Low | Low | `node server.js` runs but doesn't serve — just shows notice | Migration notices in server.js provide redirection |
 
 ---
 
-## 7. Git Repository Analysis
+## 7. Feature Requirements Verification
 
-### 7.1 Commit History (8 commits)
-
-| # | Hash | Author | Message |
-|---|------|--------|---------|
-| 1 | b865638 | Sandeep01Kumar | Update server.js |
-| 2 | 3ad1fb9 | Blitzy Agent | Add express@^5.2.1 as production dependency |
-| 3 | 63f94ee | Blitzy Agent | Update package.json: add Express.js dependency, start script, and correct main entry point |
-| 4 | ea61beb | Blitzy Agent | Migrate server.js from native http module to Express.js framework |
-| 5 | 6f15a64 | Blitzy Agent | Validate Express.js migration: update server.js with server export, create test/server.test.js, update README.md |
-| 6 | 15e470d | Blitzy Agent | Update README.md to document Express.js migration and new endpoints |
-| 7 | d3420b8 | Blitzy Agent | Create integration tests for Express.js server endpoints |
-| 8 | e0e8fbc | Blitzy Agent | Fix server.js and test/server.test.js for reliable test execution |
-
-### 7.2 File Change Summary
-
-| File | Lines Added | Lines Removed | Net Change |
-|------|-------------|---------------|------------|
-| server.js | 60 | 7 | +53 |
-| package.json | 7 | 3 | +4 |
-| package-lock.json | 814 | 0 | +814 |
-| test/server.test.js | 226 | 0 | +226 (new file) |
-| README.md | 59 | 1 | +58 |
-| **Total** | **1,166** | **11** | **+1,155** |
-
-### 7.3 Feature Completion Matrix
-
-| # | Requirement (from Agent Action Plan) | File | Status |
-|---|--------------------------------------|------|--------|
-| 1 | Replace `http.createServer()` with Express.js app | server.js | ✅ Complete |
-| 2 | `GET /` returns `"Hello, universe!\n"` with status 200, text/plain | server.js | ✅ Complete & Verified |
-| 3 | `GET /evening` returns `"Good evening"` with status 200, text/plain | server.js | ✅ Complete & Verified |
-| 4 | Server binds to 127.0.0.1:3000 | server.js | ✅ Complete & Verified |
-| 5 | Startup message: `Server running at http://127.0.0.1:3000/` | server.js | ✅ Complete & Verified |
-| 6 | Add `express@^5.2.1` to dependencies | package.json | ✅ Complete |
-| 7 | Add `start` script (`node server.js`) | package.json | ✅ Complete |
-| 8 | Correct `main` field to `server.js` | package.json | ✅ Complete |
-| 9 | Regenerate package-lock.json via npm install | package-lock.json | ✅ Complete |
-| 10 | Integration tests for both endpoints and 404 handling | test/server.test.js | ✅ Complete (8/8 pass) |
-| 11 | Update documentation with endpoints, setup instructions | README.md | ✅ Complete |
-| 12 | Maintain CommonJS `require()` syntax | All files | ✅ Complete |
-| 13 | Preserve behavioral parity (§0.4.3) | server.js | ✅ Complete & Verified |
-
-**All 13 requirements from the Agent Action Plan are fully implemented and verified.**
+| # | Requirement (from Agent Action Plan) | Status | Evidence |
+|---|--------------------------------------|--------|----------|
+| 1 | Integrate web framework to replace bare `http` module | ✅ Complete | Flask 3.1.2 in server.py with `@app.route` decorators |
+| 2 | Add `GET /evening` endpoint returning `"Good evening"` | ✅ Complete | Verified via pytest and curl — HTTP 200, correct body |
+| 3 | Preserve existing greeting at `GET /` | ✅ Complete | Returns `"Hello, universe!\n"` with text/plain, HTTP 200 |
+| 4 | Route-based request handling | ✅ Complete | Flask routing replaces catch-all handler; 404 for undefined routes |
+| 5 | Maintain 127.0.0.1:3000 binding | ✅ Complete | `app.run(host='127.0.0.1', port=3000)` confirmed |
+| 6 | Preserve startup console message | ✅ Complete | Prints `Server running at http://127.0.0.1:3000/` |
+| 7 | Test coverage for both endpoints | ✅ Complete | 8/8 tests pass (3 root + 3 evening + 2 undefined routes) |
+| 8 | Update documentation | ✅ Complete | README.md fully rewritten with endpoints, setup, and examples |
+| 9 | Dependency management | ✅ Complete | requirements.txt with Flask >=3.0.0, pytest >=8.0.0 |
