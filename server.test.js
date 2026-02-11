@@ -14,9 +14,8 @@
 const http = require('http');
 const { spawn } = require('child_process');
 const net = require('net');
-const path = require('path');
 
-const SERVER_PATH = path.join(__dirname, 'server.js');
+const SERVER_PATH = __dirname + '/server.js';
 const HOSTNAME = '127.0.0.1';
 const PORT = 3000;
 
@@ -54,15 +53,22 @@ function makeRequest(method, urlPath) {
       path: urlPath,
       method: method,
     };
-    const req = http.request(options, (res) => {
+    const responseHandler = (res) => {
       let body = '';
       res.on('data', (chunk) => { body += chunk; });
       res.on('end', () => {
         resolve({ statusCode: res.statusCode, headers: res.headers, body: body });
       });
-    });
-    req.on('error', (err) => reject(err));
-    req.end();
+    };
+    // Use http.get() for GET requests (auto-calls req.end()); http.request() for all others
+    if (method === 'GET') {
+      const req = http.get(options, responseHandler);
+      req.on('error', (err) => reject(err));
+    } else {
+      const req = http.request(options, responseHandler);
+      req.on('error', (err) => reject(err));
+      req.end();
+    }
   });
 }
 
@@ -78,17 +84,35 @@ function startServer() {
     });
     let stdout = '';
     let stderr = '';
+    let settled = false;
+
+    // Safety timeout — kill the child and reject if server doesn't start in 5 seconds
+    const startTimer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        try { child.kill('SIGKILL'); } catch (_) { /* may have already exited */ }
+        reject(new Error('Server start timeout after 5s'));
+      }
+    }, 5000);
+
     child.stdout.on('data', (data) => {
       stdout += data.toString();
-      if (stdout.includes('Server running at')) {
+      if (!settled && stdout.includes('Server running at')) {
+        settled = true;
+        clearTimeout(startTimer);
         resolve({ child, stdout, stderr });
       }
     });
     child.stderr.on('data', (data) => {
       stderr += data.toString();
     });
-    child.on('error', (err) => reject(err));
-    setTimeout(() => reject(new Error('Server start timeout after 5s')), 5000);
+    child.on('error', (err) => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(startTimer);
+        reject(err);
+      }
+    });
   });
 }
 
