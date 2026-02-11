@@ -1,36 +1,30 @@
-# Hello World — Express.js Tutorial Server
+# Hello World — Flask Tutorial Server
 
-A simple Node.js tutorial project demonstrating how to build an HTTP server with [Express.js](https://expressjs.com/). The server exposes two endpoints that return plain-text greetings.
+A simple Python 3 Flask application demonstrating how to build an HTTP server with two plain-text greeting endpoints. This project is a direct rewrite of the original Node.js/Express.js tutorial server, preserving identical endpoint behavior.
 
 > Originally created as **hao-backprop-test** — a backprop integration test fixture.
 
 ## Prerequisites
 
-- **Node.js** v20 or higher
-- **npm** v9 or higher
+- **Python** 3.10 or higher
+- **pip** (Python package manager)
 
 ## Installation
 
 Clone the repository and install the project dependencies:
 
 ```bash
-npm install
+pip install -r requirements.txt
 ```
 
-This installs [Express.js](https://www.npmjs.com/package/express) (v5.x), the project's only runtime dependency.
+This installs [Flask](https://flask.palletsprojects.com/) (v3.x), the project's only runtime dependency.
 
 ## Usage
 
-Start the server with either of the following commands:
+Start the server:
 
 ```bash
-npm start
-```
-
-or
-
-```bash
-node server.js
+python app.py
 ```
 
 The server binds to `127.0.0.1` on port `3000`. Once running, you will see:
@@ -68,13 +62,21 @@ curl http://127.0.0.1:3000/evening
 Good evening
 ```
 
+## Running Tests
+
+Run the test suite with pytest:
+
+```bash
+pytest test_app.py -v
+```
+
 ## Project Structure
 
 ```
 .
-├── server.js          # Express.js application with route definitions
-├── package.json       # npm manifest with Express.js dependency
-├── package-lock.json  # Dependency lock file (auto-generated)
+├── app.py             # Flask application with route definitions
+├── test_app.py        # Unit tests for the Flask application
+├── requirements.txt   # Python dependencies (Flask, pytest)
 └── README.md          # Project documentation (this file)
 ```
 
