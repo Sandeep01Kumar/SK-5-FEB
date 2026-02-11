@@ -1,9 +1,10 @@
 {
     "name": "hello_world",
     "version": "1.0.0",
-    "description": "Hello world in Node.js",
-    "main": "index.js",
+    "description": "Express.js tutorial server with Hello World and Good Evening endpoints",
+    "main": "server.js",
     "scripts": {
+        "start": "node server.js",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "author": "hxu",
