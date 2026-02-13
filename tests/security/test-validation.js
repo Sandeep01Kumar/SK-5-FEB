@@ -39,7 +39,7 @@ const http = require('http');
  * with other test files that set their own PORT values.
  * A high rate limit prevents accidental 429 responses during testing.
  */
-process.env.PORT = '49878';
+process.env.PORT = '49880';
 process.env.HOST = '127.0.0.1';
 process.env.RATE_LIMIT_MAX = '10000';
 
